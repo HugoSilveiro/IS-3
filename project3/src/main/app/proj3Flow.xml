@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:cxf="http://www.mulesoft.org/schema/mule/cxf" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/cxf http://www.mulesoft.org/schema/mule/cxf/current/mule-cxf.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <smtp:gmail-connector name="Gmail" validateConnections="true" doc:name="Gmail"/>
+    <flow name="test1-helloFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/is3" doc:name="HTTP"/>
+        <logger level="INFO" doc:name="Logger"/>
+        <set-payload value="Hi #[message.inboundProperties.'http.query.params'.get('name')]" doc:name="Set Payload"/>
+    </flow>
+    <flow name="Main_Flow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/soap" doc:name="HTTP"/>
+        <cxf:jaxws-service serviceClass="webpackage.MyWebService" doc:name="CXF"/>
+        <set-payload value="#[payload] tem #[payload.length()] letras" doc:name="Set Payload"/>
+        <flow-ref name="Choices-Sub_Flow" doc:name="Choices-Sub_Flow"/>
+    </flow>
+    <sub-flow name="Choices-Sub_Flow">
+        <choice doc:name="method name">
+            <when expression="#[method.name=='makeSubscription']">
+                <flow-ref name="Make_Subscription" doc:name="Make_Subscription"/>
+            </when>
+            <when expression="#[method.name=='removeSubscription']">
+                <flow-ref name="Remove_Subscription" doc:name="Remove_Subscription"/>
+            </when>
+            <when expression="#[method.name=='listSubscribers']">
+                <flow-ref name="List-Sub_Flow" doc:name="List-Sub_Flow"/>
+            </when>
+            <otherwise>
+                <set-payload value="-1" doc:name="Set Payload"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="Make_Subscription">
+        <logger message="New subscription request from SOAP Client: PAYLOAD: #[payload[0]]" level="INFO" doc:name="Logger"/>
+        <set-variable variableName="email" value="#[payload[0]]" doc:name="Set Email"/>
+        <set-variable variableName="address" value="#[payload[1]]" doc:name="Set Address"/>
+        <set-variable variableName="course" value="#[payload[2]]" doc:name="Set Course"/>
+        <flow-ref name="create_subscription-Sub_Flow" doc:name="create_subscription-Sub_Flow"/>
+        <set-payload value="#[flowVars.result]" doc:name="Set Payload"/>
+    </sub-flow>
+    <sub-flow name="create_subscription-Sub_Flow">
+        <logger message="New request to subscription from #[flowVars.email] - Address: #[flowVars.address]; Course: #[flowVars.course]" level="INFO" doc:name="Logger"/>
+        <flow-ref name="search_subscriptions-Sub_Flow" doc:name="search_subscriptions-Sub_Flow"/>
+        <choice doc:name="Choice">
+            <when expression="#[payload.size() == 0]">
+                <logger level="INFO" doc:name="Logger"/>
+                <flow-ref name="add_subscription_DB-Sub_Flow" doc:name="add_subscription_DB-Sub_Flow"/>
+                <flow-ref name="send_confirmation_email-Sub_Flow" doc:name="send_confirmation_email-Sub_Flow"/>
+                <set-variable variableName="result" value="success" doc:name="Variable"/>
+            </when>
+            <otherwise>
+                <logger message="Already exist" level="INFO" doc:name="Logger"/>
+                <set-variable variableName="result" value="error" doc:name="Variable"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="add_subscription_DB-Sub_Flow">
+        <set-variable variableName="token" value="#[java.util.UUID.randomUUID().toString()]" doc:name="Create Token"/>
+        <db:insert config-ref="" doc:name="Insert_subscription">
+            <db:parameterized-query><![CDATA[INSERT INTO Subscricao(email, address, course, token)
+VALUES (#[flowVars.email], #[flowVars.address], #[flowVars.course], #[flowVars.token]);]]></db:parameterized-query>
+        </db:insert>
+        <logger message="Subscription for #[flowVars.email] added to DB" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+    <sub-flow name="send_confirmation_email-Sub_Flow">
+        <set-payload value="Confirm your subscription: http://localhost:8081/soap/confirm_subscription?token=#[flowVars.token]" doc:name="Set Payload"/>
+        <smtp:outbound-endpoint host="smtp.gmail.com" port="587" user="test.proj3.is%40gmail.com" password="proj2016is" connector-ref="Gmail" to="#[flowVars.email]" subject="Confirm account subscription" responseTimeout="10000" doc:name="SMTP"/>
+        <logger message="Confirmation e-mail sent to #[flowVars.email]" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+    <sub-flow name="search_subscriptions-Sub_Flow">
+        <db:select config-ref="" doc:name="Search">
+            <db:parameterized-query><![CDATA[SELECT * FROM Subscricao s WHERE s.email=#[flowVars.email] AND s.course=#[flowVars.course] AND s.address=#[flowVars.address];]]></db:parameterized-query>
+        </db:select>
+        <logger message="Subscriptions found in DB: #[payload.size()]" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+    <sub-flow name="subscription-confirmation-Sub_Flow">
+        <variable-transformer doc:name="Variable"/>
+        <logger level="INFO" doc:name="Logger"/>
+        <db:no-operation-selected config-ref="" doc:name="Database"/>
+        <logger level="INFO" doc:name="Logger"/>
+        <choice doc:name="Subscription found">
+            <when expression="#[payload.size() == 1]">
+                <logger message="Subscription found. Updating token..." level="INFO" doc:name="Logger"/>
+                <db:update config-ref="" doc:name="Update token value">
+                    <db:parameterized-query><![CDATA[UPDATE Subscricao
+SET token='Confirmed'
+WHERE token=#[flowVars.token];]]></db:parameterized-query>
+                </db:update>
+                <logger message="Token updated" level="INFO" doc:name="Logger"/>
+                <set-variable variableName="result" value="success" doc:name="Variable"/>
+            </when>
+            <otherwise>
+                <logger message="Subscription not found" level="INFO" doc:name="Logger"/>
+                <set-variable variableName="result" value="error" doc:name="Variable"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="Remove_Subscription">
+        <logger message="Unsubscription from SOAP" level="INFO" doc:name="Logger"/>
+        <set-variable variableName="email" value="#[payload[0]]" doc:name="Email"/>
+        <set-variable variableName="address" value="#[payload[1]]" doc:name="Address"/>
+        <set-variable variableName="course" value="#[payload[2]]" doc:name="Course"/>
+        <flow-ref name="unsubscribe-Sub_Flow" doc:name="unsubscribe-Sub_Flow"/>
+        <set-payload value="#[flowVars.result]" doc:name="Set Payload"/>
+    </sub-flow>
+    <sub-flow name="unsubscribe-Sub_Flow">
+        <logger message="unsubscribing" level="INFO" doc:name="Logger"/>
+        <db:select config-ref="" doc:name="Fetch subscription">
+            <db:parameterized-query><![CDATA[SELECT * FROM Subscricao
+WHERE email=#[flowVars.email] and course=#[flowVars.course] and token='Confirmed';]]></db:parameterized-query>
+        </db:select>
+        <choice doc:name="Subscription exists?">
+            <when expression="#[payload.size() &gt; 0]">
+                <logger message="Subscription found" level="INFO" doc:name="Logger"/>
+                <set-variable variableName="token" value="#[java.util.UUID.randomUUID().toString()]" doc:name="Create new token"/>
+                <db:update config-ref="" doc:name="Update Token DB">
+                    <db:parameterized-query><![CDATA[UPDATE Subscricao
+SET token=#[flowVars.token]
+WHERE email=#[flowVars.email] and course=#[flowVars.course] and address=#[flowVars.address];]]></db:parameterized-query>
+                </db:update>
+                <set-payload value="Confirm unsubscribe: http://localhost:8081/soap/confirm_unsubscribe?token=#[flowVars.token]" doc:name="Set Payload"/>
+                <smtp:outbound-endpoint host="smtp.gmail.com" port="587" user="test.proj3.is%40gmail.com" password="proj2016is" connector-ref="Gmail" to="#[flowVars.email]" subject="Confirm unsubscribe" responseTimeout="10000" doc:name="SMTP"/>
+                <logger message="Unsubscription confirmation sent to e-mail" level="INFO" doc:name="Logger"/>
+                <set-variable variableName="result" value="success" doc:name="Variable"/>
+            </when>
+            <otherwise>
+                <logger message="Subscription not found" level="INFO" doc:name="Logger"/>
+                <set-variable variableName="result" value="error" doc:name="Variable"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="unsubscribe_confirmation-Sub_Flow">
+        <logger message="Unsubscribe confirmation" level="INFO" doc:name="Logger"/>
+        <set-variable variableName="token" value="#[message.inboundProperties.'http.query.params'.get('token')]" doc:name="Token"/>
+        <db:select config-ref="" doc:name="Database">
+            <db:parameterized-query><![CDATA[SELECT * FROM Subscricao WHERE token=#[flowVars.token];]]></db:parameterized-query>
+        </db:select>
+        <choice doc:name="Subscription found">
+            <when expression="#[payload.size() == 1]">
+                <logger message="Subscription found. Deleting." level="INFO" doc:name="Logger"/>
+                <db:delete config-ref="" doc:name="Delete subscription">
+                    <db:parameterized-query><![CDATA[DELETE FROM Subscricao WHERE token=#[flowVars.token];]]></db:parameterized-query>
+                </db:delete>
+                <set-variable variableName="result" value="success" doc:name="Variable"/>
+            </when>
+            <otherwise>
+                <logger message="Subscription not found" level="INFO" doc:name="Logger"/>
+                <set-variable variableName="result" value="error" doc:name="Variable"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="List-Sub_Flow">
+        <logger message="List subscribers" level="INFO" doc:name="Logger"/>
+        <set-variable variableName="course" value="#[payload[0]]" doc:name="Variable"/>
+        <db:select config-ref="" doc:name="Database">
+            <db:parameterized-query><![CDATA[SELECT * FROM Subscricao WHERE course=#[flowVars.course];]]></db:parameterized-query>
+        </db:select>
+        <choice doc:name="Course found">
+            <when expression="#[payload.size() == 1]">
+                <logger level="INFO" doc:name="Logger" message="Course found! [#[payload]"/>
+            </when>
+            <otherwise>
+                <logger level="INFO" doc:name="Logger" message="Course not found!"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+</mule>
