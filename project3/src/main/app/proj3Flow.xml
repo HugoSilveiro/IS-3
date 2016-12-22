@@ -342,13 +342,13 @@ import dbtest.MessageToParse
                     <flow-ref name="dbtestFlowJSON" doc:name="dbtestFlowJSON"/>
                     <logger message="Ok   -----  Removed material: #[flowVars.removed]" level="INFO" doc:name="Logger"/>
                     <flow-ref name="CheckSubscribersSub_Flow" doc:name="CheckSubscribersSub_Flow"/>
-                    <flow-ref name="Statistics-Sub_Flow" doc:name="Statistics-Sub_Flow"/>
                 </foreach>
             </when>
             <otherwise>
                 <logger message="Without changes" level="INFO" doc:name="Logger"/>
             </otherwise>
         </choice>
+        <flow-ref name="Statistics-Sub_Flow" doc:name="Statistics-Sub_Flow"/>
     </flow>
     <sub-flow name="Statistics-Sub_Flow">
         <db:select config-ref="MySQL_Configuration1" doc:name="Number of courses">
