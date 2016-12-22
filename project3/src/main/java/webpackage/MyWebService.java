@@ -12,14 +12,17 @@ public class MyWebService {
 	}
 	
 	@WebMethod
-	public String subscribe(){
+	public String subscribe(String email, String address, int course){
 		return "Subscribe";
 	}
 	
 	@WebMethod
-	public String unsubscribe(){
+	public String unsubscribe(String email, String address, int course){
 		return "Unsubscribe";
 	}
 	
-	
+	@WebMethod
+	public String listSubscribers(int course){
+		return "listSubscribers";
+	}
 }

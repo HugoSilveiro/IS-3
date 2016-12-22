@@ -1,46 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:cxf="http://www.mulesoft.org/schema/mule/cxf" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+<mule xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml"
+	xmlns:quartz="http://www.mulesoft.org/schema/mule/quartz"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:twitter="http://www.mulesoft.org/schema/mule/twitter"
+	xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:cxf="http://www.mulesoft.org/schema/mule/cxf" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:spring="http://www.springframework.org/schema/beans" 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
+http://www.mulesoft.org/schema/mule/quartz http://www.mulesoft.org/schema/mule/quartz/current/mule-quartz.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/twitter http://www.mulesoft.org/schema/mule/twitter/current/mule-twitter.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/cxf http://www.mulesoft.org/schema/mule/cxf/current/mule-cxf.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
-http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd">
-    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+    <http:request-config name="HTTP_Request_Configuration" host="All Interfaces [0.0.0.0] (Default)" port="8081" doc:name="HTTP Request Configuration"/>
+    <cxf:configuration name="CXF_Configuration" enableMuleSoapHeaders="true" initializeStaticBusInstance="true" doc:name="CXF Configuration"/>
+    <file:connector name="File" autoDelete="true"  streaming="false" validateConnections="true" doc:name="File"/>
+    
+    <db:mysql-config name="MySQL_Configuration" url="jdbc:mysql://localhost:3306/proj3?user=root&amp;password=hugo" doc:name="MySQL Configuration"/>
+    <http:listener-config name="HTTP_Listener_Configuration"
+		host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration" />
     <smtp:gmail-connector name="Gmail" validateConnections="true" doc:name="Gmail"/>
-    <flow name="test1-helloFlow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/is3" doc:name="HTTP"/>
-        <logger level="INFO" doc:name="Logger"/>
-        <set-payload value="Hi #[message.inboundProperties.'http.query.params'.get('name')]" doc:name="Set Payload"/>
-    </flow>
-    <flow name="Main_Flow">
+
+    <db:mysql-config name="MySQL_Configuration1" url="jdbc:mysql://localhost:3306/mysqla2?user=root&amp;password=hugo" doc:name="MySQL Configuration"/>
+    <twitter:config name="Twitter__Configuration" accessKey="810196779895586816-TB1dUGgEBk1AapJR48qmOTm4CK7uVsx" accessSecret="M1NbbR1yxxhZLeKFn9p2tC9gHTfepSqCLDQ4yFGdW9iYk" consumerKey="Jni6RZQktXrMW9CMBL9OsZIFm" consumerSecret="MK5VM8FaGm778nYWbXUr2EeagfpHjEw4DMTmVERKNllaVMJq9Z" doc:name="Twitter: Configuration"/>
+    
+    
+     <flow name="Main_Flow">
         <http:listener config-ref="HTTP_Listener_Configuration" path="/soap" doc:name="HTTP"/>
         <cxf:jaxws-service serviceClass="webpackage.MyWebService" doc:name="CXF"/>
-        <set-payload value="#[payload] tem #[payload.length()] letras" doc:name="Set Payload"/>
+        <logger message="SOAP - invoked method: #[method.name]" level="INFO" doc:name="Logger"/>
         <flow-ref name="Choices-Sub_Flow" doc:name="Choices-Sub_Flow"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="#[exception]" doc:name="Set Payload"/>
+            <file:outbound-endpoint path="C:\Users\Hugo Silveiro\Documents\University\Software Engeneering\IS\Proj3-Exercises\IS-3\Excp" outputPattern="ErrorLog_SingleSoap.txt" connector-ref="File" responseTimeout="10000" doc:name="File"/>
+        </catch-exception-strategy>
     </flow>
     <sub-flow name="Choices-Sub_Flow">
         <choice doc:name="method name">
-            <when expression="#[method.name=='makeSubscription']">
+            <when expression="#[method.name=='subscribe']">
                 <flow-ref name="Make_Subscription" doc:name="Make_Subscription"/>
             </when>
-            <when expression="#[method.name=='removeSubscription']">
+            <when expression="#[method.name=='unsubscribe']">
                 <flow-ref name="Remove_Subscription" doc:name="Remove_Subscription"/>
             </when>
             <when expression="#[method.name=='listSubscribers']">
                 <flow-ref name="List-Sub_Flow" doc:name="List-Sub_Flow"/>
             </when>
             <otherwise>
-                <set-payload value="-1" doc:name="Set Payload"/>
+                <set-payload value="#[payload] tem #[payload.length()] letras" doc:name="Set Payload"/>
             </otherwise>
         </choice>
     </sub-flow>
     <sub-flow name="Make_Subscription">
-        <logger message="New subscription request from SOAP Client: PAYLOAD: #[payload[0]]" level="INFO" doc:name="Logger"/>
+        <logger message="New subscription request from SOAP Client: PAYLOAD: #[payload]" level="INFO" doc:name="Logger"/>
         <set-variable variableName="email" value="#[payload[0]]" doc:name="Set Email"/>
         <set-variable variableName="address" value="#[payload[1]]" doc:name="Set Address"/>
         <set-variable variableName="course" value="#[payload[2]]" doc:name="Set Course"/>
@@ -55,80 +76,109 @@ http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smt
                 <logger level="INFO" doc:name="Logger"/>
                 <flow-ref name="add_subscription_DB-Sub_Flow" doc:name="add_subscription_DB-Sub_Flow"/>
                 <flow-ref name="send_confirmation_email-Sub_Flow" doc:name="send_confirmation_email-Sub_Flow"/>
-                <set-variable variableName="result" value="success" doc:name="Variable"/>
+                <set-variable variableName="result" value="Subscribed with success (waiting for confirmation)" doc:name="Variable"/>
             </when>
             <otherwise>
                 <logger message="Already exist" level="INFO" doc:name="Logger"/>
-                <set-variable variableName="result" value="error" doc:name="Variable"/>
+                <set-variable variableName="result" value="Subscriber already exists" doc:name="Variable"/>
             </otherwise>
         </choice>
     </sub-flow>
     <sub-flow name="add_subscription_DB-Sub_Flow">
         <set-variable variableName="token" value="#[java.util.UUID.randomUUID().toString()]" doc:name="Create Token"/>
-        <db:insert config-ref="" doc:name="Insert_subscription">
+        <db:insert config-ref="MySQL_Configuration" doc:name="Insert_subscription">
             <db:parameterized-query><![CDATA[INSERT INTO Subscricao(email, address, course, token)
 VALUES (#[flowVars.email], #[flowVars.address], #[flowVars.course], #[flowVars.token]);]]></db:parameterized-query>
         </db:insert>
         <logger message="Subscription for #[flowVars.email] added to DB" level="INFO" doc:name="Logger"/>
     </sub-flow>
     <sub-flow name="send_confirmation_email-Sub_Flow">
-        <set-payload value="Confirm your subscription: http://localhost:8081/soap/confirm_subscription?token=#[flowVars.token]" doc:name="Set Payload"/>
-        <smtp:outbound-endpoint host="smtp.gmail.com" port="587" user="test.proj3.is%40gmail.com" password="proj2016is" connector-ref="Gmail" to="#[flowVars.email]" subject="Confirm account subscription" responseTimeout="10000" doc:name="SMTP"/>
+        <set-payload value="Confirm your subscription: http://localhost:8081/confirm_subscription?token=#[flowVars.token]" doc:name="Set Payload"/>
+        <smtp:outbound-endpoint host="smtp.gmail.com" port="587" user="test.proj3.is%40gmail.com" password="proj2016is" connector-ref="Gmail" to="#[flowVars.email]" from="test.proj3.is@gmail.com" subject="Confirm account subscription" responseTimeout="10000" doc:name="SMTP"/>
+        <db:update config-ref="MySQL_Configuration" doc:name="Update number of emails-daily">
+            <db:parameterized-query><![CDATA[UPDATE Statistcs
+SET counter = counter + 1
+WHERE name = 'daily_mails';]]></db:parameterized-query>
+        </db:update>
+        <db:update config-ref="MySQL_Configuration" doc:name="Update number os emails-all">
+            <db:parameterized-query><![CDATA[UPDATE Statistcs
+SET counter = counter + 1
+WHERE name = 'all_mails';]]></db:parameterized-query>
+        </db:update>
         <logger message="Confirmation e-mail sent to #[flowVars.email]" level="INFO" doc:name="Logger"/>
     </sub-flow>
     <sub-flow name="search_subscriptions-Sub_Flow">
-        <db:select config-ref="" doc:name="Search">
+        <db:select config-ref="MySQL_Configuration" doc:name="Search">
             <db:parameterized-query><![CDATA[SELECT * FROM Subscricao s WHERE s.email=#[flowVars.email] AND s.course=#[flowVars.course] AND s.address=#[flowVars.address];]]></db:parameterized-query>
         </db:select>
         <logger message="Subscriptions found in DB: #[payload.size()]" level="INFO" doc:name="Logger"/>
     </sub-flow>
-    <sub-flow name="subscription-confirmation-Sub_Flow">
-        <variable-transformer doc:name="Variable"/>
-        <logger level="INFO" doc:name="Logger"/>
-        <db:no-operation-selected config-ref="" doc:name="Database"/>
-        <logger level="INFO" doc:name="Logger"/>
+    <flow name="subscription-confirmation-Sub_Flow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/confirm_subscription/" doc:name="HTTP"/>
+        <logger message="Logger-Token: #[message.inboundProperties.'http.query.params'.get('token')]" level="INFO" doc:name="Logger"/>
+        <set-variable doc:name="Set token" value="#[message.inboundProperties.'http.query.params'.get('token')]" variableName="token	"/>
+        <logger level="INFO" doc:name="Logger" message="Searching for token '#[message.inboundProperties.'http.query.params'.get('token')]'"/>
+        <db:select config-ref="MySQL_Configuration" doc:name="Confirm Subscription">
+            <db:parameterized-query><![CDATA[SELECT * FROM Subscricao WHERE token=#[message.inboundProperties.'http.query.params'.get('token')];]]></db:parameterized-query>
+        </db:select>
+        <logger level="INFO" doc:name="Logger" message="Subscriptions found: #[payload.size()]"/>
         <choice doc:name="Subscription found">
             <when expression="#[payload.size() == 1]">
                 <logger message="Subscription found. Updating token..." level="INFO" doc:name="Logger"/>
-                <db:update config-ref="" doc:name="Update token value">
+                <db:update config-ref="MySQL_Configuration" doc:name="Update token value">
                     <db:parameterized-query><![CDATA[UPDATE Subscricao
 SET token='Confirmed'
-WHERE token=#[flowVars.token];]]></db:parameterized-query>
+WHERE token=#[message.inboundProperties.'http.query.params'.get('token')];]]></db:parameterized-query>
                 </db:update>
                 <logger message="Token updated" level="INFO" doc:name="Logger"/>
                 <set-variable variableName="result" value="success" doc:name="Variable"/>
+                <set-payload value="Subscribed!" doc:name="Set Payload"/>
             </when>
             <otherwise>
                 <logger message="Subscription not found" level="INFO" doc:name="Logger"/>
                 <set-variable variableName="result" value="error" doc:name="Variable"/>
             </otherwise>
         </choice>
-    </sub-flow>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="#[exception]" doc:name="Set Payload"/>
+            <file:outbound-endpoint path="C:\Users\Hugo Silveiro\Documents\University\Software Engeneering\IS\Proj3-Exercises\IS-3\Excp" outputPattern="ErrorLog_SingleSoap.txt" connector-ref="File" responseTimeout="10000" doc:name="File"/>
+        </catch-exception-strategy>
+    </flow>
     <sub-flow name="Remove_Subscription">
         <logger message="Unsubscription from SOAP" level="INFO" doc:name="Logger"/>
         <set-variable variableName="email" value="#[payload[0]]" doc:name="Email"/>
         <set-variable variableName="address" value="#[payload[1]]" doc:name="Address"/>
-        <set-variable variableName="course" value="#[payload[2]]" doc:name="Course"/>
+        <set-variable variableName="course" value="#[payload[2]]" doc:name="Courses"/>
         <flow-ref name="unsubscribe-Sub_Flow" doc:name="unsubscribe-Sub_Flow"/>
         <set-payload value="#[flowVars.result]" doc:name="Set Payload"/>
     </sub-flow>
     <sub-flow name="unsubscribe-Sub_Flow">
         <logger message="unsubscribing" level="INFO" doc:name="Logger"/>
-        <db:select config-ref="" doc:name="Fetch subscription">
+        <db:select config-ref="MySQL_Configuration" doc:name="Fetch subscription">
             <db:parameterized-query><![CDATA[SELECT * FROM Subscricao
 WHERE email=#[flowVars.email] and course=#[flowVars.course] and token='Confirmed';]]></db:parameterized-query>
         </db:select>
         <choice doc:name="Subscription exists?">
-            <when expression="#[payload.size() &gt; 0]">
+            <when expression="#[payload.size() == 1]">
                 <logger message="Subscription found" level="INFO" doc:name="Logger"/>
                 <set-variable variableName="token" value="#[java.util.UUID.randomUUID().toString()]" doc:name="Create new token"/>
-                <db:update config-ref="" doc:name="Update Token DB">
+                <db:update config-ref="MySQL_Configuration" doc:name="Update Token DB">
                     <db:parameterized-query><![CDATA[UPDATE Subscricao
 SET token=#[flowVars.token]
 WHERE email=#[flowVars.email] and course=#[flowVars.course] and address=#[flowVars.address];]]></db:parameterized-query>
                 </db:update>
-                <set-payload value="Confirm unsubscribe: http://localhost:8081/soap/confirm_unsubscribe?token=#[flowVars.token]" doc:name="Set Payload"/>
-                <smtp:outbound-endpoint host="smtp.gmail.com" port="587" user="test.proj3.is%40gmail.com" password="proj2016is" connector-ref="Gmail" to="#[flowVars.email]" subject="Confirm unsubscribe" responseTimeout="10000" doc:name="SMTP"/>
+                <set-payload value="Confirm unsubscribe: http://localhost:8081/confirm_unsubscribe?token=#[flowVars.token]" doc:name="Set Payload"/>
+                <smtp:outbound-endpoint host="smtp.gmail.com" port="587" user="test.proj3.is%40gmail.com" password="proj2016is" connector-ref="Gmail" to="#[flowVars.email]" subject="Confirm unsubscribe" responseTimeout="10000" doc:name="SMTP" from="test.proj3.is@gmail.com"/>
+                <db:update config-ref="MySQL_Configuration" doc:name="Update daily-mails">
+                    <db:parameterized-query><![CDATA[UPDATE Statistcs
+SET counter = counter + 1
+WHERE name = 'daily_mails';]]></db:parameterized-query>
+                </db:update>
+                <db:update config-ref="MySQL_Configuration" doc:name="Update all-mails">
+                    <db:parameterized-query><![CDATA[UPDATE Statistcs
+SET counter = counter + 1
+WHERE name = 'all_mails';]]></db:parameterized-query>
+                </db:update>
                 <logger message="Unsubscription confirmation sent to e-mail" level="INFO" doc:name="Logger"/>
                 <set-variable variableName="result" value="success" doc:name="Variable"/>
             </when>
@@ -138,16 +188,18 @@ WHERE email=#[flowVars.email] and course=#[flowVars.course] and address=#[flowVa
             </otherwise>
         </choice>
     </sub-flow>
-    <sub-flow name="unsubscribe_confirmation-Sub_Flow">
+    <flow name="unsubscribe_confirmation-Sub_Flow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/confirm_unsubscribe/" doc:name="HTTP"/>
         <logger message="Unsubscribe confirmation" level="INFO" doc:name="Logger"/>
         <set-variable variableName="token" value="#[message.inboundProperties.'http.query.params'.get('token')]" doc:name="Token"/>
-        <db:select config-ref="" doc:name="Database">
-            <db:parameterized-query><![CDATA[SELECT * FROM Subscricao WHERE token=#[flowVars.token];]]></db:parameterized-query>
+        <logger message="Searching for token '#[message.inboundProperties.'http.query.params'.get('token')]'" level="INFO" doc:name="Logger"/>
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[SELECT * FROM Subscricao WHERE token=#[message.inboundProperties.'http.query.params'.get('token')];]]></db:parameterized-query>
         </db:select>
         <choice doc:name="Subscription found">
             <when expression="#[payload.size() == 1]">
                 <logger message="Subscription found. Deleting." level="INFO" doc:name="Logger"/>
-                <db:delete config-ref="" doc:name="Delete subscription">
+                <db:delete config-ref="MySQL_Configuration" doc:name="Delete subscription">
                     <db:parameterized-query><![CDATA[DELETE FROM Subscricao WHERE token=#[flowVars.token];]]></db:parameterized-query>
                 </db:delete>
                 <set-variable variableName="result" value="success" doc:name="Variable"/>
@@ -157,20 +209,169 @@ WHERE email=#[flowVars.email] and course=#[flowVars.course] and address=#[flowVa
                 <set-variable variableName="result" value="error" doc:name="Variable"/>
             </otherwise>
         </choice>
-    </sub-flow>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="#[exception]" doc:name="Set Payload"/>
+            <file:outbound-endpoint path="C:\Users\Hugo Silveiro\Documents\University\Software Engeneering\IS\Proj3-Exercises\IS-3\Excp" outputPattern="ErrorLog_SingleSoap.txt" connector-ref="File" responseTimeout="10000" doc:name="File"/>
+        </catch-exception-strategy>
+    </flow>
     <sub-flow name="List-Sub_Flow">
         <logger message="List subscribers" level="INFO" doc:name="Logger"/>
-        <set-variable variableName="course" value="#[payload[0]]" doc:name="Variable"/>
-        <db:select config-ref="" doc:name="Database">
-            <db:parameterized-query><![CDATA[SELECT * FROM Subscricao WHERE course=#[flowVars.course];]]></db:parameterized-query>
+        <set-variable variableName="course_id" value="3" doc:name="Course"/>
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[SELECT * FROM Subscricao WHERE course=#[flowVars.course_id] and token ='Confirmed';]]></db:parameterized-query>
         </db:select>
         <choice doc:name="Course found">
-            <when expression="#[payload.size() == 1]">
-                <logger level="INFO" doc:name="Logger" message="Course found! [#[payload]"/>
+            <when expression="#[payload.size() &gt; 0]">
+                <logger level="INFO" doc:name="Logger" message="Course found!"/>
+                <set-variable variableName="result" value="#[new StringBuilder()]" doc:name="Variable"/>
+                <foreach doc:name="For Each">
+                    <expression-component doc:name="Expression"><![CDATA[result.append(payload.email+"\n")]]></expression-component>
+                </foreach>
+                <set-payload value="Subscritores:
+#[flowVars.result.toString()]" doc:name="Set Payload"/>
             </when>
             <otherwise>
                 <logger level="INFO" doc:name="Logger" message="Course not found!"/>
             </otherwise>
         </choice>
     </sub-flow>
+    
+    <sub-flow name="dbtestFlowJSON">
+        <db:select config-ref="MySQL_Configuration1" doc:name="Database">
+            <db:parameterized-query><![CDATA[select student.name,student.inst_email,student.id, course_student.course_id from course_student , student  where course_student.student_id = student.id;]]></db:parameterized-query>
+        </db:select>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        
+        <file:outbound-endpoint path="C:\Users\Hugo Silveiro\Documents\University\Software Engeneering\IS\Proj3-Exercises\IS-3\project3" outputPattern="students.json" responseTimeout="10000" doc:name="File"/>
+		
+		<json:json-to-object-transformer returnClass="java.util.List" doc:name="JSON to Object"/>
+		   
+
+        <set-variable variableName="variable" value="#[message.payload]" doc:name="Variable"/>
+        
+        <logger message="after variable" level="INFO" doc:name="Logger"/>
+        <foreach collection="#[flowVars.variable]" doc:name="For Each">
+            <set-variable variableName="email" value="#[payload.get('inst_email')]" doc:name="Email"/>
+            <logger message="Email  #[email]" level="INFO" doc:name="Logger"/>
+            <set-payload value="Id do curso inscrito: #[flowVars.course_id]
+Material removidos:  #[flowVars.removed]
+Material adicionado:  #[flowVars.changes]" doc:name="Set Payload"/>
+            <logger message="Sending message--- To: #[email] Message: #[payload]" level="INFO" doc:name="Logger"/>
+            <smtp:outbound-endpoint host="smtp.gmail.com" port="587" user="test.proj3.is%40gmail.com" password="proj2016is" connector-ref="Gmail" to="#[email]" from="test.proj3.is@gmail.com" subject="Material changed" responseTimeout="10000" doc:name="SMTP"/>
+            <logger message="Sent with success" level="INFO" doc:name="Logger"/>
+            <db:update config-ref="MySQL_Configuration" doc:name="Update number of emails-daily">
+                <db:parameterized-query><![CDATA[UPDATE Statistcs
+SET counter = counter + 1
+WHERE name = 'daily_mails';]]></db:parameterized-query>
+            </db:update>
+            <db:update config-ref="MySQL_Configuration" doc:name="Update number os emails-all">
+                <db:parameterized-query><![CDATA[UPDATE Statistcs
+SET counter = counter + 1
+WHERE name = 'all_mails';]]></db:parameterized-query>
+            </db:update>
+            <logger message="Statistics updated" level="INFO" doc:name="Logger"/>
+        </foreach>
+    </sub-flow>
+    <sub-flow name="CheckSubscribersSub_Flow">
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[select email from subscricao where course = #[flowVars.course_id] and token = 'Confirmed';]]></db:parameterized-query>
+        </db:select>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[payload.size() &gt; 0]">
+                <logger message="Subscribers found" level="INFO" doc:name="Logger"/>
+                <json:object-to-json-transformer doc:name="Object to JSON"/>
+                <json:json-to-object-transformer returnClass="java.util.List" doc:name="JSON to Object"/>
+                <logger message="After JSON #[payload]" level="INFO" doc:name="Logger"/>
+                <set-variable variableName="result" value="#[message.payload]" doc:name="Variable"/>
+                <foreach doc:name="For Each">
+                    <logger message="Inside for each: #[payload]" level="INFO" doc:name="Logger"/>
+                    <object-to-string-transformer doc:name="Object to String"/>
+                    <set-variable variableName="trimEmail" value="#[#[org.mule.util.StringUtils.substringBetween(payload, '{email=','}')]]" doc:name="Variable"/>
+                    <logger message="Email: #[flowVars.trimEmail]" level="INFO" doc:name="Copy_of_Logger"/>
+                    <set-variable variableName="mail" value="#[trimEmail]" doc:name="Email"/>
+                    <logger message="TESTE ---- #[mail]" level="INFO" doc:name="Logger"/>
+                    <set-payload value="Id do curso inscrito: #[flowVars.course_id] Material removidos:  #[flowVars.removed] Material adicionado:  #[flowVars.changes]" doc:name="Set Payload"/>
+                    <logger message="After set: #[payload] mail: #[mail]" level="INFO" doc:name="Logger"/>
+                    <smtp:outbound-endpoint host="smtp.gmail.com" port="587" user="test.proj3.is%40gmail.com" password="proj2016is" connector-ref="Gmail" to="#[mail]" from="test.proj3.is@gmail.com" subject="Material changed" responseTimeout="10000" doc:name="SMTP"/>
+                    <db:update config-ref="MySQL_Configuration" doc:name="Update number of emails-daily">
+                        <db:parameterized-query><![CDATA[UPDATE Statistcs
+SET counter = counter + 1
+WHERE name = 'daily_mails';]]></db:parameterized-query>
+                    </db:update>
+                    <db:update config-ref="MySQL_Configuration" doc:name="Update number os emails-all">
+                        <db:parameterized-query><![CDATA[UPDATE Statistcs
+SET counter = counter + 1
+WHERE name = 'all_mails';]]></db:parameterized-query>
+                    </db:update>
+                    <logger message="Email " level="INFO" doc:name="Logger"/>
+                </foreach>
+            </when>
+            <otherwise>
+                <logger message="Subscribers not found" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <flow name="dbtestFlow">
+        <quartz:inbound-endpoint jobName="Wait3" repeatInterval="5000" responseTimeout="10000" doc:name="Quartz3">
+            <quartz:event-generator-job/>
+        </quartz:inbound-endpoint>
+        <db:select config-ref="MySQL_Configuration1" doc:name="Database">
+            <db:parameterized-query><![CDATA[select content, course_id from material;]]></db:parameterized-query>
+        </db:select>
+        <mulexml:object-to-xml-transformer doc:name="Object to XML"/>
+        <file:outbound-endpoint path="C:\Users\Hugo Silveiro\Documents\University\Software Engeneering\IS\Proj3-Exercises\IS-3\project3" outputPattern="new.xml" responseTimeout="10000" doc:name="File"/>
+     <scripting:transformer doc:name="Looking for differences" encoding="ISO-8859-2">
+            <scripting:script engine="Groovy">
+                <scripting:text><![CDATA[import dbtest.Helpers
+import dbtest.Message
+import dbtest.MessageToParse
+  
+  Helpers.worker();
+]]></scripting:text>
+            </scripting:script>
+        </scripting:transformer>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[payload.size() &gt; 0]">
+                <logger message="With changes" level="INFO" doc:name="Logger"/>
+                <foreach doc:name="For Each">
+                    <set-variable variableName="changes" value="#[payload.getAddedMaterials()]" doc:name="Added Material"/>
+                    <set-variable variableName="removed" value="#[payload.getRemovedMaterials()] " doc:name="Removed Material"/>
+                    <set-variable variableName="course_id" value=" #[payload.getCourse_id()] " doc:name="Course"/>
+                    <flow-ref name="dbtestFlowJSON" doc:name="dbtestFlowJSON"/>
+                    <logger message="Ok   -----  Removed material: #[flowVars.removed]" level="INFO" doc:name="Logger"/>
+                    <flow-ref name="CheckSubscribersSub_Flow" doc:name="CheckSubscribersSub_Flow"/>
+                    <flow-ref name="Statistics-Sub_Flow" doc:name="Statistics-Sub_Flow"/>
+                </foreach>
+            </when>
+            <otherwise>
+                <logger message="Without changes" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+    </flow>
+    <sub-flow name="Statistics-Sub_Flow">
+        <db:select config-ref="MySQL_Configuration1" doc:name="Number of courses">
+            <db:parameterized-query><![CDATA[SELECT COUNT(*) FROM course;]]></db:parameterized-query>
+        </db:select>
+        <set-variable variableName="n_courses" value="#[payload]" doc:name="Number Courses"/>
+        <db:select config-ref="MySQL_Configuration" doc:name="Daily Mails">
+            <db:parameterized-query><![CDATA[select counter from statistcs where name='daily_mails';]]></db:parameterized-query>
+        </db:select>
+        <set-variable variableName="daily_mails" value="#[payload]" doc:name="Daily"/>
+        <db:select config-ref="MySQL_Configuration" doc:name="All Emails">
+            <db:parameterized-query><![CDATA[select counter from statistcs where name='all_mails';]]></db:parameterized-query>
+        </db:select>
+        <set-variable variableName="all_mails" value="#[payload]" doc:name="Variable"/>
+        <twitter:update-status config-ref="Twitter__Configuration" status="Total number of courses: #[flowVars.counter]; Daily mails: #[flowVars.daily_mails]; All mails: #[flowVars.all_mails]" doc:name="Twitter"/>
+        <logger message="Twitter sent with success" level="INFO" doc:name="Logger"/>
+        <db:update config-ref="MySQL_Configuration" doc:name="Reset daily emails">
+            <db:parameterized-query><![CDATA[UPDATE Statistcs
+SET counter = 0
+WHERE name = 'daily_mails';]]></db:parameterized-query>
+        </db:update>
+        <logger message="Reset daily emails with success" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+ 
+
 </mule>

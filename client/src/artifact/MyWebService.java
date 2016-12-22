@@ -39,6 +39,9 @@ public interface MyWebService {
 
     /**
      * 
+     * @param arg2
+     * @param arg1
+     * @param arg0
      * @return
      *     returns java.lang.String
      */
@@ -46,10 +49,19 @@ public interface MyWebService {
     @WebResult(targetNamespace = "")
     @RequestWrapper(localName = "subscribe", targetNamespace = "http://webpackage/", className = "artifact.Subscribe")
     @ResponseWrapper(localName = "subscribeResponse", targetNamespace = "http://webpackage/", className = "artifact.SubscribeResponse")
-    public String subscribe();
+    public String subscribe(
+        @WebParam(name = "arg0", targetNamespace = "")
+        String arg0,
+        @WebParam(name = "arg1", targetNamespace = "")
+        String arg1,
+        @WebParam(name = "arg2", targetNamespace = "")
+        int arg2);
 
     /**
      * 
+     * @param arg2
+     * @param arg1
+     * @param arg0
      * @return
      *     returns java.lang.String
      */
@@ -57,6 +69,26 @@ public interface MyWebService {
     @WebResult(targetNamespace = "")
     @RequestWrapper(localName = "unsubscribe", targetNamespace = "http://webpackage/", className = "artifact.Unsubscribe")
     @ResponseWrapper(localName = "unsubscribeResponse", targetNamespace = "http://webpackage/", className = "artifact.UnsubscribeResponse")
-    public String unsubscribe();
+    public String unsubscribe(
+        @WebParam(name = "arg0", targetNamespace = "")
+        String arg0,
+        @WebParam(name = "arg1", targetNamespace = "")
+        String arg1,
+        @WebParam(name = "arg2", targetNamespace = "")
+        int arg2);
+
+    /**
+     * 
+     * @param arg0
+     * @return
+     *     returns java.lang.String
+     */
+    @WebMethod
+    @WebResult(targetNamespace = "")
+    @RequestWrapper(localName = "listSubscribers", targetNamespace = "http://webpackage/", className = "artifact.ListSubscribers")
+    @ResponseWrapper(localName = "listSubscribersResponse", targetNamespace = "http://webpackage/", className = "artifact.ListSubscribersResponse")
+    public String listSubscribers(
+        @WebParam(name = "arg0", targetNamespace = "")
+        int arg0);
 
 }

@@ -1,0 +1,28 @@
+<linked-list>
+  <org.mule.util.CaseInsensitiveHashMap serialization="custom">
+    <unserializable-parents/>
+    <org.mule.util.CaseInsensitiveHashMap>
+      <default/>
+      <float>0.75</float>
+      <int>16</int>
+      <int>2</int>
+      <string>course_id</string>
+      <int>3</int>
+      <string>content</string>
+      <string>bug16.PNG</string>
+    </org.mule.util.CaseInsensitiveHashMap>
+  </org.mule.util.CaseInsensitiveHashMap>
+  <org.mule.util.CaseInsensitiveHashMap serialization="custom">
+    <unserializable-parents/>
+    <org.mule.util.CaseInsensitiveHashMap>
+      <default/>
+      <float>0.75</float>
+      <int>16</int>
+      <int>2</int>
+      <string>course_id</string>
+      <int>3</int>
+      <string>content</string>
+      <string>bug16.PNG</string>
+    </org.mule.util.CaseInsensitiveHashMap>
+  </org.mule.util.CaseInsensitiveHashMap>
+</linked-list>

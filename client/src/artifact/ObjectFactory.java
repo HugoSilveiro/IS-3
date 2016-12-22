@@ -28,8 +28,10 @@ public class ObjectFactory {
     private final static QName _Subscribe_QNAME = new QName("http://webpackage/", "subscribe");
     private final static QName _Unsubscribe_QNAME = new QName("http://webpackage/", "unsubscribe");
     private final static QName _GetNameResponse_QNAME = new QName("http://webpackage/", "getNameResponse");
+    private final static QName _ListSubscribers_QNAME = new QName("http://webpackage/", "listSubscribers");
     private final static QName _SubscribeResponse_QNAME = new QName("http://webpackage/", "subscribeResponse");
     private final static QName _UnsubscribeResponse_QNAME = new QName("http://webpackage/", "unsubscribeResponse");
+    private final static QName _ListSubscribersResponse_QNAME = new QName("http://webpackage/", "listSubscribersResponse");
 
     /**
      * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: artifact
@@ -71,6 +73,14 @@ public class ObjectFactory {
     }
 
     /**
+     * Create an instance of {@link ListSubscribers }
+     * 
+     */
+    public ListSubscribers createListSubscribers() {
+        return new ListSubscribers();
+    }
+
+    /**
      * Create an instance of {@link SubscribeResponse }
      * 
      */
@@ -84,6 +94,14 @@ public class ObjectFactory {
      */
     public UnsubscribeResponse createUnsubscribeResponse() {
         return new UnsubscribeResponse();
+    }
+
+    /**
+     * Create an instance of {@link ListSubscribersResponse }
+     * 
+     */
+    public ListSubscribersResponse createListSubscribersResponse() {
+        return new ListSubscribersResponse();
     }
 
     /**
@@ -123,6 +141,15 @@ public class ObjectFactory {
     }
 
     /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link ListSubscribers }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://webpackage/", name = "listSubscribers")
+    public JAXBElement<ListSubscribers> createListSubscribers(ListSubscribers value) {
+        return new JAXBElement<ListSubscribers>(_ListSubscribers_QNAME, ListSubscribers.class, null, value);
+    }
+
+    /**
      * Create an instance of {@link JAXBElement }{@code <}{@link SubscribeResponse }{@code >}}
      * 
      */
@@ -138,6 +165,15 @@ public class ObjectFactory {
     @XmlElementDecl(namespace = "http://webpackage/", name = "unsubscribeResponse")
     public JAXBElement<UnsubscribeResponse> createUnsubscribeResponse(UnsubscribeResponse value) {
         return new JAXBElement<UnsubscribeResponse>(_UnsubscribeResponse_QNAME, UnsubscribeResponse.class, null, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link ListSubscribersResponse }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://webpackage/", name = "listSubscribersResponse")
+    public JAXBElement<ListSubscribersResponse> createListSubscribersResponse(ListSubscribersResponse value) {
+        return new JAXBElement<ListSubscribersResponse>(_ListSubscribersResponse_QNAME, ListSubscribersResponse.class, null, value);
     }
 
 }
